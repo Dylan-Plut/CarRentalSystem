@@ -16,8 +16,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open http://127.0.0.1:5000. The database (`rental.db`) is created with demo data on first run.
-Reset it any time with `flask --app app init-db`.
+Open http://127.0.0.1:5000.
 
 Demo accounts (password `password`):
 
