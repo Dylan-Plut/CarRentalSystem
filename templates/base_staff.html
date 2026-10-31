@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · Staff Portal</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><i>LOGO</i> Staff Portal</div>
+  <div>{{ branch }} &nbsp; {{ session.name }} · Staff &nbsp; <a href="{{ url_for('logout') }}">Sign out</a></div>
+</header>
+<div class="staff">
+  <nav class="sidebar">
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
+    <a href="{{ url_for('fleet') }}" class="{{ 'active' if request.endpoint == 'fleet' }}">Fleet</a>
+    <span>Reservations <small>· Sprint 2</small></span>
+    <span>Reports <small>· Sprint 2</small></span>
+  </nav>
+  <main class="main">
+    {% include "_flash.html" %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

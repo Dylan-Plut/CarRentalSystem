@@ -1,0 +1,90 @@
+{% extends "base_staff.html" %}
+{% block title %}Fleet{% endblock %}
+{% block content %}
+<h1>Fleet</h1>
+<div class="split" style="margin-top:16px">
+  <div class="card">
+    <form class="toolbar" method="get">
+      <input type="search" name="q" value="{{ f.q }}" placeholder="Search plate or model" style="flex:1; width:100% !important">
+      <select name="show" onchange="this.form.submit()">
+        <option value="active" {{ 'selected' if f.show == 'active' }}>Active vehicles</option>
+        <option value="all" {{ 'selected' if f.show == 'all' }}>All vehicles</option>
+      </select>
+    </form>
+    <table>
+      <thead><tr><th>VEHICLE</th><th>PLATE</th><th>TYPE</th><th>DAMAGE</th><th>STATUS</th></tr></thead>
+      <tbody>
+      {% for v in vehicles %}
+        <tr class="{{ 'selected' if selected and v.id == selected.id }} {{ 'retired' if v.status == 'retired' }}">
+          <td><a href="{{ url_for('fleet', vehicle=v.id, show=f.show, q=f.q) }}">{{ v.model }}</a></td>
+          <td>{{ v.plate }}</td>
+          <td>{{ v.type }}</td>
+          <td>{% if v.open_damage %}<span class="warn-text">{{ v.open_damage }} open</span>{% else %}None{% endif %}</td>
+          <td>{{ {'active': 'Active', 'maintenance': 'In maintenance', 'retired': 'Retired'}[v.status] }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="muted">No vehicles found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if selected %}
+  <div class="card record">
+    <div class="between"><b style="font-size:16px">{{ selected.model }} · {{ selected.plate }}</b>
+      <span class="badge b-{{ selected.status }}">{{ selected.status|capitalize }}</span></div>
+    <div class="row2" style="margin-top:10px">
+      <label class="field">Type<input value="{{ selected.type }}" disabled></label>
+      <label class="field">Seats<input value="{{ selected.seats }}" disabled></label>
+      <label class="field">Daily rate<input value="${{ '%.0f' % selected.daily_rate }}/day" disabled></label>
+      <label class="field">Fuel<input value="{{ selected.fuel }}" disabled></label>
+    </div>
+    {% if selected.status != 'retired' %}
+    <form method="post" action="{{ url_for('set_service', vehicle_id=selected.id) }}">
+      {% if selected.status == 'maintenance' %}
+      <button class="btn btn-outline btn-sm" name="action" value="in">Return to service</button>
+      {% else %}
+      <button class="btn btn-warn btn-sm" name="action" value="out">Take out of service</button>
+      {% endif %}
+    </form>
+    {% endif %}
+
+    <div class="between" style="margin-top:18px">
+      <b>Damage log</b><span class="small muted">{{ damage|length }} report{{ '' if damage|length == 1 else 's' }}</span>
+    </div>
+    {% for d in damage %}
+    <div class="damage-item">
+      <div class="ph"></div>
+      <div>
+        <b>{{ d.area }} · {{ d.kind|lower }}</b>
+        <div class="small muted">{{ d.reported_at }} · {{ 'from customer' if d.source == 'customer' else 'logged by staff' }}</div>
+        {% if d.description %}<div class="small">{{ d.description }}</div>{% endif %}
+      </div>
+      <form method="post" action="{{ url_for('update_damage', report_id=d.id) }}">
+        <select name="status" class="badge b-{{ d.status }}" onchange="this.form.submit()">
+          {% for key, label in statuses.items() %}<option value="{{ key }}" {{ 'selected' if d.status == key }}>{{ label }}</option>{% endfor %}
+        </select>
+      </form>
+    </div>
+    {% else %}
+    <p class="small muted">No damage on file.</p>
+    {% endfor %}
+
+    <form class="log-form" method="post" action="{{ url_for('log_damage', vehicle_id=selected.id) }}">
+      <b>Log damage</b>
+      <div class="row2" style="margin-top:8px">
+        <label class="field">Area<select name="area" required>
+          <option value="">Choose…</option>{% for a in areas %}<option>{{ a }}</option>{% endfor %}</select></label>
+        <label class="field">Type<select name="kind" required>
+          <option value="">Choose…</option>{% for k in kinds %}<option>{{ k }}</option>{% endfor %}</select></label>
+      </div>
+      <label class="field">Notes<textarea name="description" rows="2" maxlength="500" placeholder="Size, location, anything the repair shop should know"></textarea></label>
+      {% if selected.status == 'active' %}
+      <label class="small" style="display:block; margin-bottom:10px"><input type="checkbox" name="out_of_service" value="1">Take vehicle out of service until repaired</label>
+      {% endif %}
+      <button class="btn btn-outline btn-sm">Log damage</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

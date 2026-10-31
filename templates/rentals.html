@@ -1,0 +1,24 @@
+{% extends "base_customer.html" %}
+{% block title %}My rentals{% endblock %}
+{% block header %}My rentals{% endblock %}
+{% block content %}
+{% if confirmed %}
+<div class="notice">
+  <b>✓ Reservation confirmed · #{{ confirmed }}</b>
+  <div class="small muted">Show this booking ID at the counter when you pick up.</div>
+</div>
+{% endif %}
+
+<div class="label caps">Upcoming</div>
+{% for r in upcoming %}
+<div class="booking">
+  <div class="between"><b>{{ r.model }}</b><span>#{{ r.id }}</span></div>
+  <div class="small muted">{{ r.pickup_date }} → {{ r.return_date }} · {{ r.branch }}</div>
+  <div class="small">Total ${{ '%.2f' % r.total }}</div>
+</div>
+{% else %}
+<p class="muted">No upcoming rentals yet. <a href="{{ url_for('search') }}">Find a car</a></p>
+{% endfor %}
+
+<p class="small muted">Rental history, extensions and self-service returns are planned for a later sprint.</p>
+{% endblock %}

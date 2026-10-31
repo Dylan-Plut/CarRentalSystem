@@ -1,0 +1,60 @@
+{% extends "base_customer.html" %}
+{% block title %}{{ car.model }}{% endblock %}
+{% block header %}
+<a class="back" href="{{ url_for('search', pickup=pickup, dropoff=dropoff) }}" aria-label="Back">‹</a> Vehicle details
+{% endblock %}
+{% block content %}
+<div class="ph hero"><span>VEHICLE PHOTOS</span></div>
+<h2>{{ car.model }}</h2>
+<div class="muted">{{ car.type }} · {{ car.seats }} seats · {{ car.transmission }} · {{ car.fuel }}</div>
+
+{% if damage %}
+<details class="alert">
+  <summary>⚠ Existing damage on file: <b>{{ damage|length }} item{{ 's' if damage|length > 1 }}</b></summary>
+  <ul>{% for d in damage %}<li>{{ d.area }} · {{ d.kind|lower }}</li>{% endfor %}</ul>
+  <div class="small muted">You won't be charged for damage already on file.</div>
+</details>
+{% endif %}
+
+<div class="panel trip">
+  <div><span>Pick-up</span><b>{{ pickup }}</b></div>
+  <div><span>Return</span><b>{{ dropoff }}</b></div>
+  <div class="small muted">{{ branch }}</div>
+  <div class="small muted">{{ branch }}</div>
+</div>
+
+<form method="post" action="{{ url_for('reserve', vehicle_id=car.id) }}" id="reserve">
+  <input type="hidden" name="pickup" value="{{ pickup }}">
+  <input type="hidden" name="dropoff" value="{{ dropoff }}">
+
+  <div class="line"><span>Base rate · ${{ '%.0f' % car.daily_rate }}/day × {{ q.days }} day{{ 's' if q.days > 1 }}</span><span>${{ '%.2f' % q.base }}</span></div>
+  <div class="line"><span>Taxes &amp; fees</span><span id="taxes">${{ '%.2f' % q.taxes }}</span></div>
+
+  <div class="label caps">Optional extras</div>
+  {% for key, (name, price) in extras.items() %}
+  <label class="line"><span><input type="checkbox" name="extras" value="{{ key }}" data-price="{{ price }}">{{ name }}</span><span>+${{ '%.0f' % price }}/day</span></label>
+  {% endfor %}
+
+  <div class="line total"><b>Total</b><b id="total">${{ '%.2f' % q.total }}</b></div>
+
+  {% if available %}
+  <button class="btn btn-primary btn-block">Reserve this car</button>
+  {% else %}
+  <div class="flash">This car is no longer available for these dates.</div>
+  {% endif %}
+  <p class="fine">Payment is handled by a secure payment processor. Card details are never stored by us.</p>
+</form>
+
+<script>
+  // Live price preview only; the server recalculates the total when the booking is saved.
+  const days = {{ q.days }}, base = {{ q.base }}, taxRate = {{ tax_rate }};
+  const money = n => '$' + n.toFixed(2);
+  document.querySelectorAll('#reserve input[type=checkbox]').forEach(box => box.addEventListener('change', () => {
+    const extras = [...document.querySelectorAll('#reserve input[type=checkbox]:checked')]
+      .reduce((sum, b) => sum + Number(b.dataset.price) * days, 0);
+    const taxes = Math.round((base + extras) * taxRate * 100) / 100;
+    document.getElementById('taxes').textContent = money(taxes);
+    document.getElementById('total').textContent = money(base + extras + taxes);
+  }));
+</script>
+{% endblock %}

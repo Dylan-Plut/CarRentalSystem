@@ -1,0 +1,67 @@
+{% extends "base_customer.html" %}
+{% block title %}Find a car{% endblock %}
+{% block header %}Find a car{% endblock %}
+{% block content %}
+<form method="get" action="{{ url_for('search') }}" id="search">
+  <label class="field">Pick-up location
+    <select name="branch"><option>{{ branch }}</option></select>
+  </label>
+  <div class="row2">
+    <label class="field">Pick-up <input type="date" name="pickup" value="{{ f.pickup }}" min="{{ today }}"></label>
+    <label class="field">Return <input type="date" name="dropoff" value="{{ f.dropoff }}" min="{{ today }}"></label>
+  </div>
+
+  <div class="panel">
+    <div class="between"><b>Filters</b><a href="{{ url_for('search', pickup=f.pickup, dropoff=f.dropoff) }}">Clear all</a></div>
+
+    <div class="label">Vehicle type</div>
+    <div class="chips">
+      <label class="chip"><input type="radio" name="type" value="" {{ 'checked' if not f.type }}><span>Any</span></label>
+      {% for t in types %}
+      <label class="chip"><input type="radio" name="type" value="{{ t }}" {{ 'checked' if f.type == t }}><span>{{ t }}</span></label>
+      {% endfor %}
+    </div>
+
+    <div class="label between">Max price per day <span id="price-out">${{ f.max_price }} / day</span></div>
+    <input type="range" name="max_price" min="30" max="150" step="5" value="{{ f.max_price }}"
+           oninput="document.getElementById('price-out').textContent = '$' + this.value + ' / day'">
+
+    <div class="label">Seats</div>
+    <div class="chips square">
+      {% for s in [2, 4, 5, 7] %}
+      <label class="chip"><input type="radio" name="seats" value="{{ s }}" {{ 'checked' if f.seats == s }}><span>{{ s }}+</span></label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="between results-head">
+    <b>{{ cars|length }} car{{ '' if cars|length == 1 else 's' }} match</b>
+    <select name="sort" class="inline">
+      <option value="price_asc" {{ 'selected' if f.sort == 'price_asc' }}>Sort: Price ↑</option>
+      <option value="price_desc" {{ 'selected' if f.sort == 'price_desc' }}>Sort: Price ↓</option>
+    </select>
+  </div>
+</form>
+
+{% for car in cars %}
+<div class="car">
+  <div class="ph thumb"></div>
+  <div class="car-info">
+    <b>{{ car.model }}</b>
+    <span class="muted small">{{ car.type }} · {{ car.seats }} seats · {{ car.transmission }}</span>
+    <div class="between">
+      <b>${{ '%.0f' % car.daily_rate }}/day</b>
+      <a href="{{ url_for('vehicle', vehicle_id=car.id, pickup=f.pickup, dropoff=f.dropoff) }}">View details</a>
+    </div>
+  </div>
+</div>
+{% else %}
+<p class="muted">No cars match these filters for your dates. Try a higher price, fewer seats or different dates.</p>
+{% endfor %}
+
+<script>
+  // Re-run the search as soon as any filter changes (the slider waits until it is released).
+  document.querySelectorAll('#search input, #search select').forEach(el =>
+    el.addEventListener('change', () => el.form.submit()));
+</script>
+{% endblock %}

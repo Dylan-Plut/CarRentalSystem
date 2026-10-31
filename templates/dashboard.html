@@ -1,0 +1,47 @@
+{% extends "base_staff.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="between"><h1>Today at {{ branch }}</h1><span class="muted">{{ today }}</span></div>
+
+<div class="stats">
+  <div class="stat">Available now<b>{{ counts['Available'] }}</b></div>
+  <div class="stat">On rent<b>{{ counts['On rent'] }}</b></div>
+  <div class="stat">Due back today<b>{{ due_today }}</b></div>
+  <div class="stat warn">In maintenance<b>{{ counts['Maintenance'] }}</b></div>
+</div>
+
+<div class="card">
+  <form class="between toolbar" method="get">
+    <b>Vehicle availability</b>
+    <div class="toolbar">
+      <select name="type" onchange="this.form.submit()">
+        <option value="">All types</option>
+        {% for t in types %}<option {{ 'selected' if f.type == t }}>{{ t }}</option>{% endfor %}
+      </select>
+      <select name="state" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        {% for s in ['Available', 'Reserved', 'On rent', 'Maintenance'] %}<option {{ 'selected' if f.state == s }}>{{ s }}</option>{% endfor %}
+      </select>
+      <input type="search" name="q" value="{{ f.q }}" placeholder="Search plate or model">
+    </div>
+  </form>
+  <table>
+    <thead><tr><th>VEHICLE</th><th>PLATE</th><th>TYPE</th><th>SEATS</th><th>STATUS</th><th>NEXT BOOKING</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><b>{{ r.model }}</b></td>
+        <td>{{ r.plate }}</td>
+        <td>{{ r.type }}</td>
+        <td>{{ r.seats }}</td>
+        <td><span class="badge b-{{ r.state|lower|replace(' ', '') }}">{{ r.state }}</span></td>
+        <td>{{ r.next_booking }}</td>
+        <td><a href="{{ url_for('fleet', vehicle=r.id) }}">View</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted">No vehicles match these filters.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
