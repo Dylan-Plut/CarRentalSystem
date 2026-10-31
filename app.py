@@ -164,7 +164,7 @@ def reserve(vehicle_id):
 @login_required("customer")
 def my_rentals():
     upcoming = get_db().execute(
-        "SELECT r.*, v.model FROM reservations r JOIN vehicles v ON v.id = r.vehicle_id"
+        "SELECT r.*, v.model, v.image FROM reservations r JOIN vehicles v ON v.id = r.vehicle_id"
         " WHERE r.user_id = ? AND r.status = 'confirmed' AND r.return_date >= ?"
         " ORDER BY r.pickup_date",
         [session["user_id"], date.today().isoformat()]).fetchall()

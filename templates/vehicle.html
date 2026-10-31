@@ -4,7 +4,8 @@
 <a class="back" href="{{ url_for('search', pickup=pickup, dropoff=dropoff) }}" aria-label="Back">‹</a> Vehicle details
 {% endblock %}
 {% block content %}
-<div class="ph hero"><span>VEHICLE PHOTOS</span></div>
+{% if car.image %}<img class="hero" src="{{ url_for('static', filename='cars/' ~ car.image) }}" alt="{{ car.model }}">
+{% else %}<div class="ph hero"><span>VEHICLE PHOTOS</span></div>{% endif %}
 <h2>{{ car.model }}</h2>
 <div class="muted">{{ car.type }} · {{ car.seats }} seats · {{ car.transmission }} · {{ car.fuel }}</div>
 

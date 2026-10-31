@@ -33,6 +33,7 @@
   <div class="card record">
     <div class="between"><b style="font-size:16px">{{ selected.model }} · {{ selected.plate }}</b>
       <span class="badge b-{{ selected.status }}">{{ selected.status|capitalize }}</span></div>
+    {% if selected.image %}<img class="record-photo" src="{{ url_for('static', filename='cars/' ~ selected.image) }}" alt="{{ selected.model }}">{% endif %}
     <div class="row2" style="margin-top:10px">
       <label class="field">Type<input value="{{ selected.type }}" disabled></label>
       <label class="field">Seats<input value="{{ selected.seats }}" disabled></label>

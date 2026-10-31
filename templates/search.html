@@ -45,7 +45,8 @@
 
 {% for car in cars %}
 <div class="car">
-  <div class="ph thumb"></div>
+  {% if car.image %}<img class="thumb" src="{{ url_for('static', filename='cars/' ~ car.image) }}" alt="{{ car.model }}">
+  {% else %}<div class="ph thumb"></div>{% endif %}
   <div class="car-info">
     <b>{{ car.model }}</b>
     <span class="muted small">{{ car.type }} · {{ car.seats }} seats · {{ car.transmission }}</span>

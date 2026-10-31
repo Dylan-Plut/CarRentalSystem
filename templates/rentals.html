@@ -11,10 +11,13 @@
 
 <div class="label caps">Upcoming</div>
 {% for r in upcoming %}
-<div class="booking">
-  <div class="between"><b>{{ r.model }}</b><span>#{{ r.id }}</span></div>
-  <div class="small muted">{{ r.pickup_date }} → {{ r.return_date }} · {{ r.branch }}</div>
-  <div class="small">Total ${{ '%.2f' % r.total }}</div>
+<div class="booking car">
+  {% if r.image %}<img class="thumb" src="{{ url_for('static', filename='cars/' ~ r.image) }}" alt="{{ r.model }}">{% endif %}
+  <div class="car-info">
+    <div class="between"><b>{{ r.model }}</b><span>#{{ r.id }}</span></div>
+    <div class="small muted">{{ r.pickup_date }} → {{ r.return_date }} · {{ r.branch }}</div>
+    <div class="small">Total ${{ '%.2f' % r.total }}</div>
+  </div>
 </div>
 {% else %}
 <p class="muted">No upcoming rentals yet. <a href="{{ url_for('search') }}">Find a car</a></p>

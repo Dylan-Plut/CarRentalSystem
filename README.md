@@ -30,3 +30,5 @@ Demo accounts (password `password`):
 - `rentals.py` – search, availability, pricing and inventory rules
 - `db.py` / `schema.sql` – SQLite connection, tables and seed data
 - `templates/`, `static/style.css` – pages based on the Milestone 02 mock-ups
+
+Vehicle photos come from Wikimedia Commons (CC BY-SA); see [static/cars/CREDITS.md](static/cars/CREDITS.md).

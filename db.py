@@ -54,22 +54,24 @@ def seed(db):
             ("staff@example.com", generate_password_hash("password"), "Jordan Patel", "staff"),
         ],
     )
+    vehicles = [
+        ("Mitsubishi Mirage", "CKRT 214", "Compact", 4, 39, "Automatic", "Gasoline", "active"),
+        ("Kia Rio", "CLMB 552", "Compact", 5, 44, "Automatic", "Gasoline", "active"),
+        ("Toyota Corolla", "CPDX 318", "Sedan", 5, 55, "Automatic", "Hybrid", "active"),
+        ("Honda Civic", "CRWA 907", "Sedan", 5, 58, "Automatic", "Gasoline", "active"),
+        ("Nissan Sentra", "BXTE 441", "Sedan", 5, 50, "Automatic", "Gasoline", "retired"),
+        ("Toyota RAV4", "CSJK 120", "SUV", 5, 79, "Automatic", "Hybrid", "active"),
+        ("Honda CR-V", "CTLP 663", "SUV", 5, 82, "Automatic", "Gasoline", "active"),
+        ("Kia Sorento", "CVNE 285", "SUV", 7, 95, "Automatic", "Gasoline", "active"),
+        ("Ford Explorer", "CWHB 738", "SUV", 7, 110, "Automatic", "Gasoline", "active"),
+        ("Chrysler Pacifica", "CXMR 019", "Van", 7, 105, "Automatic", "Hybrid", "maintenance"),
+        ("Toyota Sienna", "CYAF 376", "Van", 8, 115, "Automatic", "Hybrid", "active"),
+    ]
+    # Photos live in static/cars/, named after the model, e.g. "Honda CR-V" -> honda-cr-v.jpg
     db.executemany(
-        "INSERT INTO vehicles (model, plate, type, seats, daily_rate, transmission, fuel, status)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-            ("Mitsubishi Mirage", "CKRT 214", "Compact", 4, 39, "Automatic", "Gasoline", "active"),
-            ("Kia Rio", "CLMB 552", "Compact", 5, 44, "Automatic", "Gasoline", "active"),
-            ("Toyota Corolla", "CPDX 318", "Sedan", 5, 55, "Automatic", "Hybrid", "active"),
-            ("Honda Civic", "CRWA 907", "Sedan", 5, 58, "Automatic", "Gasoline", "active"),
-            ("Nissan Sentra", "BXTE 441", "Sedan", 5, 50, "Automatic", "Gasoline", "retired"),
-            ("Toyota RAV4", "CSJK 120", "SUV", 5, 79, "Automatic", "Hybrid", "active"),
-            ("Honda CR-V", "CTLP 663", "SUV", 5, 82, "Automatic", "Gasoline", "active"),
-            ("Kia Sorento", "CVNE 285", "SUV", 7, 95, "Automatic", "Gasoline", "active"),
-            ("Ford Explorer", "CWHB 738", "SUV", 7, 110, "Automatic", "Gasoline", "active"),
-            ("Chrysler Pacifica", "CXMR 019", "Van", 7, 105, "Automatic", "Hybrid", "maintenance"),
-            ("Toyota Sienna", "CYAF 376", "Van", 8, 115, "Automatic", "Hybrid", "active"),
-        ],
+        "INSERT INTO vehicles (model, plate, type, seats, daily_rate, transmission, fuel, status, image)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [(*v, v[0].lower().replace(" ", "-") + ".jpg") for v in vehicles],
     )
 
     # Bookings are relative to today so the dashboard always has something to show.

@@ -20,7 +20,8 @@ CREATE TABLE vehicles (
     daily_rate   REAL NOT NULL,
     transmission TEXT NOT NULL,
     fuel         TEXT NOT NULL,
-    status       TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'maintenance', 'retired'))
+    image        TEXT,  -- file name under static/cars/
+    status      TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'maintenance', 'retired'))
 );
 
 -- A booking holds the car from pickup_date up to (and including the morning of) return_date,
