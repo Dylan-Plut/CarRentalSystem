@@ -15,6 +15,8 @@ from werkzeug.security import check_password_hash
 import db as database
 import rentals
 from db import get_db
+import sqlite3
+from decimal import Decimal, InvalidOperation
 
 app = Flask(__name__)
 app.config.update(
@@ -212,9 +214,17 @@ def fleet():
         damage = db.execute(
             "SELECT * FROM damage_reports WHERE vehicle_id = ? ORDER BY reported_at DESC, id DESC",
             [selected["id"]]).fetchall()
-    return render_template("fleet.html", vehicles=vehicles, selected=selected, damage=damage,
-                           f={"show": show, "q": q}, areas=rentals.DAMAGE_AREAS,
-                           kinds=rentals.DAMAGE_KINDS, statuses=rentals.DAMAGE_STATUSES)
+    return render_template(
+        "fleet.html",
+        vehicles=vehicles,
+        selected=selected,
+        damage=damage,
+        f={"show": show, "q": q},
+        areas=rentals.DAMAGE_AREAS,
+        kinds=rentals.DAMAGE_KINDS,
+        statuses=rentals.DAMAGE_STATUSES,
+        types=rentals.VEHICLE_TYPES,
+    )
 
 
 @app.post("/staff/vehicles/<int:vehicle_id>/damage")
@@ -235,6 +245,87 @@ def log_damage(vehicle_id):
     flash("Damage logged.", "ok")
     return redirect(url_for("fleet", vehicle=vehicle_id))
 
+@app.post("/staff/vehicles/<int:vehicle_id>/edit")
+@login_required("staff")
+def edit_vehicle(vehicle_id):
+    db = get_db()
+
+    vehicle = db.execute(
+        "SELECT * FROM vehicles WHERE id = ?",
+        [vehicle_id],
+    ).fetchone()
+
+    if vehicle is None:
+        abort(404)
+
+    model = request.form.get("model", "").strip()
+    plate = request.form.get("plate", "").strip()
+    vehicle_type = request.form.get("type", "").strip()
+    fuel = request.form.get("fuel", "").strip()
+
+    try:
+        if not model or not plate or not fuel:
+            raise ValueError("Model, plate, and fuel are required.")
+
+        if vehicle_type not in rentals.VEHICLE_TYPES:
+            raise ValueError("Choose a valid vehicle type.")
+
+        try:
+            seats = int(request.form.get("seats", ""))
+        except ValueError:
+            raise ValueError("Seats must be a whole number.")
+
+        if seats < 1:
+            raise ValueError("Seats must be at least 1.")
+
+        try:
+            daily_rate = Decimal(request.form.get("daily_rate", ""))
+        except InvalidOperation:
+            raise ValueError("Enter a valid daily rate.")
+
+        if not daily_rate.is_finite() or daily_rate <= 0:
+            raise ValueError("Daily rate must be greater than zero.")
+
+        if daily_rate != daily_rate.quantize(Decimal("0.01")):
+            raise ValueError("Daily rate can have at most two decimal places.")
+
+        db.execute(
+            """
+            UPDATE vehicles
+            SET model = ?,
+                plate = ?,
+                type = ?,
+                seats = ?,
+                daily_rate = ?,
+                fuel = ?
+            WHERE id = ?
+            """,
+            [
+                model,
+                plate,
+                vehicle_type,
+                seats,
+                float(daily_rate),
+                fuel,
+                vehicle_id,
+            ],
+        )
+        db.commit()
+
+    except ValueError as exc:
+        flash(str(exc))
+    except InvalidOperation:
+        flash("Enter a valid daily rate.")
+    except sqlite3.IntegrityError:
+        db.rollback()
+        flash(
+            "The vehicle could not be saved. Check for a duplicate plate "
+            "or values that violate the database rules."
+        )
+    else:
+        flash("Vehicle details updated.", "ok")
+
+    return redirect(url_for("fleet", vehicle=vehicle_id, show="all"))
 
 @app.post("/staff/damage/<int:report_id>/status")
 @login_required("staff")

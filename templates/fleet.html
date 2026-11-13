@@ -34,12 +34,89 @@
     <div class="between"><b style="font-size:16px">{{ selected.model }} · {{ selected.plate }}</b>
       <span class="badge b-{{ selected.status }}">{{ selected.status|capitalize }}</span></div>
     {% if selected.image %}<img class="record-photo" src="{{ url_for('static', filename='cars/' ~ selected.image) }}" alt="{{ selected.model }}">{% endif %}
-    <div class="row2" style="margin-top:10px">
-      <label class="field">Type<input value="{{ selected.type }}" disabled></label>
-      <label class="field">Seats<input value="{{ selected.seats }}" disabled></label>
-      <label class="field">Daily rate<input value="${{ '%.0f' % selected.daily_rate }}/day" disabled></label>
-      <label class="field">Fuel<input value="{{ selected.fuel }}" disabled></label>
-    </div>
+  <form
+  method="post"
+  action="{{ url_for('edit_vehicle', vehicle_id=selected.id) }}"
+  style="margin-top:10px"
+>
+  <div class="row2">
+    <label class="field">
+      Model
+      <input
+        type="text"
+        name="model"
+        value="{{ selected.model }}"
+        required
+      >
+    </label>
+
+    <label class="field">
+      Plate
+      <input
+        type="text"
+        name="plate"
+        value="{{ selected.plate }}"
+        required
+      >
+    </label>
+
+    <label class="field">
+      Type
+      <select name="type" required>
+        {% for vehicle_type in types %}
+        <option
+          value="{{ vehicle_type }}"
+          {% if selected.type == vehicle_type %}selected{% endif %}
+        >
+          {{ vehicle_type }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label class="field">
+      Seats
+      <input
+        type="number"
+        name="seats"
+        min="1"
+        step="1"
+        value="{{ selected.seats }}"
+        required
+      >
+    </label>
+
+    <label class="field">
+      Daily rate ($/day)
+      <input
+        type="number"
+        name="daily_rate"
+        min="0.01"
+        step="0.01"
+        value="{{ '%.2f' % selected.daily_rate }}"
+        required
+      >
+    </label>
+
+    <label class="field">
+      Fuel
+      <input
+        type="text"
+        name="fuel"
+        value="{{ selected.fuel }}"
+        required
+      >
+    </label>
+  </div>
+
+  <button
+    type="submit"
+    class="btn btn-outline btn-sm"
+    style="margin-top:10px"
+  >
+    Save vehicle details
+  </button>
+</form>
     {% if selected.status != 'retired' %}
     <form method="post" action="{{ url_for('set_service', vehicle_id=selected.id) }}">
       {% if selected.status == 'maintenance' %}
