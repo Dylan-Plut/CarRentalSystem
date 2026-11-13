@@ -1,9 +1,11 @@
-"""Car Rental System – Sprint 01 prototype (Group 31).
+"""Car Rental System – Sprint 02 (Group 31).
 
-Customer app: sign in, search & filter cars, view details, reserve.
-Staff portal: vehicle availability dashboard, fleet list with damage log.
+Customer app: sign in, search & filter cars, view details, reserve, rental history.
+Staff portal: vehicle availability dashboard, fleet management (add / edit / retire) with damage log,
+vehicle utilization report.
 """
 import os
+import sqlite3
 from collections import Counter
 from datetime import date, timedelta
 from functools import wraps
@@ -27,6 +29,11 @@ database.init_app(app)
 @app.context_processor
 def template_globals():
     return {"today": date.today().isoformat(), "branch": rentals.BRANCH}
+
+
+@app.template_filter("extra_name")
+def extra_name(key):
+    return rentals.EXTRAS.get(key, (key,))[0]
 
 
 def login_required(role):
@@ -163,12 +170,15 @@ def reserve(vehicle_id):
 @app.get("/rentals")
 @login_required("customer")
 def my_rentals():
-    upcoming = get_db().execute(
-        "SELECT r.*, v.model, v.image FROM reservations r JOIN vehicles v ON v.id = r.vehicle_id"
+    db = get_db()
+    today = date.today()
+    upcoming = db.execute(
+        "SELECT r.*, v.name, v.image FROM reservations r JOIN vehicles v ON v.id = r.vehicle_id"
         " WHERE r.user_id = ? AND r.status = 'confirmed' AND r.return_date >= ?"
         " ORDER BY r.pickup_date",
-        [session["user_id"], date.today().isoformat()]).fetchall()
-    return render_template("rentals.html", upcoming=upcoming,
+        [session["user_id"], today.isoformat()]).fetchall()
+    history = rentals.rental_history(db, session["user_id"], today)
+    return render_template("rentals.html", upcoming=upcoming, history=history,
                            confirmed=request.args.get("confirmed", type=int))
 
 
@@ -187,7 +197,7 @@ def dashboard():
     shown = [r for r in rows
              if (not vtype or r["type"] == vtype)
              and (not state or r["state"] == state)
-             and (not q or q in r["model"].lower() or q in r["plate"].lower())]
+             and (not q or q in r["name"].lower() or q in r["plate"].lower())]
     return render_template("dashboard.html", rows=shown, counts=counts, due_today=due_today,
                            types=rentals.VEHICLE_TYPES, f={"type": vtype, "state": state, "q": q})
 
@@ -199,22 +209,142 @@ def fleet():
     q = request.args.get("q", "").strip()
     sql = """SELECT v.*, (SELECT COUNT(*) FROM damage_reports d
                           WHERE d.vehicle_id = v.id AND d.status != 'fixed') AS open_damage
-             FROM vehicles v WHERE (v.model LIKE :q OR v.plate LIKE :q)"""
+             FROM vehicles v WHERE (v.name LIKE :q OR v.plate LIKE :q)"""
     if show == "active":
         sql += " AND v.status != 'retired'"
     db = get_db()
-    vehicles = db.execute(sql + " ORDER BY v.type, v.model", {"q": f"%{q}%"}).fetchall()
+    vehicles = db.execute(sql + " ORDER BY v.type, v.make, v.model", {"q": f"%{q}%"}).fetchall()
 
     selected_id = request.args.get("vehicle", type=int)
-    selected = next((v for v in vehicles if v["id"] == selected_id), vehicles[0] if vehicles else None)
-    damage = []
+    selected = next((v for v in vehicles if v["id"] == selected_id), None)
+    if selected is None and selected_id:
+        # A car hidden by the current filter (e.g. just retired) can still be opened directly.
+        selected = db.execute("SELECT v.*, 0 AS open_damage FROM vehicles v WHERE v.id = ?",
+                              [selected_id]).fetchone()
+    if selected is None and vehicles:
+        selected = vehicles[0]
+    damage, upcoming = [], []
     if selected:
         damage = db.execute(
             "SELECT * FROM damage_reports WHERE vehicle_id = ? ORDER BY reported_at DESC, id DESC",
             [selected["id"]]).fetchall()
+        upcoming = rentals.upcoming_bookings(db, selected["id"], date.today())
     return render_template("fleet.html", vehicles=vehicles, selected=selected, damage=damage,
+                           upcoming=upcoming, editing=request.args.get("edit") == "1",
                            f={"show": show, "q": q}, areas=rentals.DAMAGE_AREAS,
-                           kinds=rentals.DAMAGE_KINDS, statuses=rentals.DAMAGE_STATUSES)
+                           kinds=rentals.DAMAGE_KINDS, statuses=rentals.DAMAGE_STATUSES,
+                           **vehicle_form_options())
+
+
+def vehicle_form_options():
+    return {"types": rentals.VEHICLE_TYPES, "transmissions": rentals.TRANSMISSIONS,
+            "fuels": rentals.FUELS, "vehicle_statuses": rentals.VEHICLE_STATUSES,
+            "max_year": date.today().year + 1, "min_year": rentals.MIN_YEAR}
+
+
+def car_photo(make, model):
+    """Use a stock photo from static/cars/ if one exists for this make and model."""
+    name = f"{make}-{model}".lower().replace(" ", "-") + ".jpg"
+    return name if (Path(app.static_folder) / "cars" / name).exists() else None
+
+
+@app.route("/staff/vehicles/new", methods=["GET", "POST"])
+@login_required("staff")
+def add_vehicle():
+    form = request.form
+    if request.method == "POST":
+        try:
+            v = rentals.parse_vehicle(form, date.today().year)
+        except ValueError as e:
+            flash(str(e))
+        else:
+            db = get_db()
+            try:
+                cur = db.execute(
+                    "INSERT INTO vehicles (make, model, year, plate, type, seats, daily_rate,"
+                    " transmission, fuel, status, image) VALUES (:make, :model, :year, :plate, :type,"
+                    " :seats, :daily_rate, :transmission, :fuel, :status, :image)",
+                    {**v, "image": car_photo(v["make"], v["model"])})
+                db.commit()
+            except sqlite3.IntegrityError:
+                flash(f"A vehicle with plate {v['plate']} already exists.")
+            else:
+                flash(f"{v['make']} {v['model']} added to the fleet.", "ok")
+                return redirect(url_for("fleet", vehicle=cur.lastrowid))
+    return render_template("vehicle_form.html", v=form, **vehicle_form_options())
+
+
+@app.post("/staff/vehicles/<int:vehicle_id>/edit")
+@login_required("staff")
+def edit_vehicle(vehicle_id):
+    db = get_db()
+    car = db.execute("SELECT * FROM vehicles WHERE id = ?", [vehicle_id]).fetchone()
+    if car is None:
+        abort(404)
+    if car["status"] == "retired":
+        flash("Retired vehicles can't be edited. Reinstate it first.")
+        return redirect(url_for("fleet", vehicle=vehicle_id, show="all"))
+    try:
+        v = rentals.parse_vehicle(request.form, date.today().year)
+    except ValueError as e:
+        flash(str(e))
+        return redirect(url_for("fleet", vehicle=vehicle_id, edit=1))
+    try:
+        db.execute(
+            "UPDATE vehicles SET make = :make, model = :model, year = :year, plate = :plate, type = :type,"
+            " seats = :seats, daily_rate = :daily_rate, transmission = :transmission, fuel = :fuel,"
+            " status = :status, image = COALESCE(image, :image) WHERE id = :id",
+            {**v, "image": car_photo(v["make"], v["model"]), "id": vehicle_id})
+        db.commit()
+    except sqlite3.IntegrityError:
+        flash(f"A vehicle with plate {v['plate']} already exists.")
+        return redirect(url_for("fleet", vehicle=vehicle_id, edit=1))
+    flash("Vehicle details saved.", "ok")
+    return redirect(url_for("fleet", vehicle=vehicle_id))
+
+
+@app.post("/staff/vehicles/<int:vehicle_id>/retire")
+@login_required("staff")
+def retire_vehicle(vehicle_id):
+    db = get_db()
+    car = db.execute("SELECT * FROM vehicles WHERE id = ?", [vehicle_id]).fetchone()
+    if car is None:
+        abort(404)
+    if request.form.get("action") == "reinstate":
+        db.execute("UPDATE vehicles SET status = 'active' WHERE id = ? AND status = 'retired'", [vehicle_id])
+        db.commit()
+        flash(f"{car['name']} is back in the fleet.", "ok")
+        return redirect(url_for("fleet", vehicle=vehicle_id))
+
+    db.execute("BEGIN IMMEDIATE")  # no new booking can sneak in between the check and the update
+    booked = rentals.upcoming_bookings(db, vehicle_id, date.today())
+    if booked:
+        db.rollback()
+        flash(f"{car['name']} has {len(booked)} upcoming booking{'s' if len(booked) > 1 else ''}"
+              " and can't be retired until they are finished or cancelled.")
+        return redirect(url_for("fleet", vehicle=vehicle_id))
+    db.execute("UPDATE vehicles SET status = 'retired' WHERE id = ?", [vehicle_id])
+    db.commit()
+    flash(f"{car['name']} retired. It no longer appears to customers.", "ok")
+    return redirect(url_for("fleet", vehicle=vehicle_id, show="all"))
+
+
+@app.get("/staff/reports")
+@login_required("staff")
+def reports():
+    today = date.today()
+    try:
+        start = date.fromisoformat(request.args.get("start", ""))
+        end = date.fromisoformat(request.args.get("end", ""))
+    except ValueError:
+        start, end = today - timedelta(days=29), today
+    try:
+        report = rentals.utilization(get_db(), start, end)
+    except ValueError as e:
+        flash(str(e))
+        start, end = end, start
+        report = rentals.utilization(get_db(), start, end)
+    return render_template("reports.html", report=report, start=start.isoformat(), end=end.isoformat())
 
 
 @app.post("/staff/vehicles/<int:vehicle_id>/damage")

@@ -1,0 +1,22 @@
+{# Shared add/edit vehicle fields. `v` is either a vehicle row or the submitted form. #}
+<div class="row2" style="margin-top:8px">
+  <label class="field">Make<input name="make" value="{{ v.make or '' }}" maxlength="40" required placeholder="Toyota"></label>
+  <label class="field">Model<input name="model" value="{{ v.model or '' }}" maxlength="40" required placeholder="Corolla"></label>
+  <label class="field">Year<input type="number" name="year" value="{{ v.year or '' }}" min="{{ min_year }}" max="{{ max_year }}" required></label>
+  <label class="field">Plate<input name="plate" value="{{ v.plate or '' }}" maxlength="10" required placeholder="ABCD 123"></label>
+  <label class="field">Type<select name="type" required>
+    <option value="">Choose…</option>
+    {% for t in types %}<option {{ 'selected' if v.type == t }}>{{ t }}</option>{% endfor %}
+  </select></label>
+  <label class="field">Seating capacity<input type="number" name="seats" value="{{ v.seats or '' }}" min="1" max="15" required></label>
+  <label class="field">Daily rental price ($)<input type="number" name="daily_rate" value="{{ v.daily_rate or '' }}" min="1" max="1000" step="0.01" required></label>
+  <label class="field">Availability<select name="status">
+    {% for key in ['active', 'maintenance'] %}<option value="{{ key }}" {{ 'selected' if (v.status or 'active') == key }}>{{ vehicle_statuses[key] }}</option>{% endfor %}
+  </select></label>
+  <label class="field">Transmission<select name="transmission" required>
+    {% for t in transmissions %}<option {{ 'selected' if v.transmission == t }}>{{ t }}</option>{% endfor %}
+  </select></label>
+  <label class="field">Fuel<select name="fuel" required>
+    {% for fu in fuels %}<option {{ 'selected' if v.fuel == fu }}>{{ fu }}</option>{% endfor %}
+  </select></label>
+</div>

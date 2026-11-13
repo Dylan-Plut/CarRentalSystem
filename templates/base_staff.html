@@ -15,9 +15,9 @@
 <div class="staff">
   <nav class="sidebar">
     <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
-    <a href="{{ url_for('fleet') }}" class="{{ 'active' if request.endpoint == 'fleet' }}">Fleet</a>
-    <span>Reservations <small>· Sprint 2</small></span>
-    <span>Reports <small>· Sprint 2</small></span>
+    <a href="{{ url_for('fleet') }}" class="{{ 'active' if request.endpoint in ('fleet', 'add_vehicle') }}">Fleet</a>
+    <span>Reservations <small>· later sprint</small></span>
+    <a href="{{ url_for('reports') }}" class="{{ 'active' if request.endpoint == 'reports' }}">Reports</a>
   </nav>
   <main class="main">
     {% include "_flash.html" %}

@@ -1,13 +1,13 @@
 {% extends "base_customer.html" %}
-{% block title %}{{ car.model }}{% endblock %}
+{% block title %}{{ car.name }}{% endblock %}
 {% block header %}
 <a class="back" href="{{ url_for('search', pickup=pickup, dropoff=dropoff) }}" aria-label="Back">‹</a> Vehicle details
 {% endblock %}
 {% block content %}
-{% if car.image %}<img class="hero" src="{{ url_for('static', filename='cars/' ~ car.image) }}" alt="{{ car.model }}">
+{% if car.image %}<img class="hero" src="{{ url_for('static', filename='cars/' ~ car.image) }}" alt="{{ car.name }}">
 {% else %}<div class="ph hero"><span>VEHICLE PHOTOS</span></div>{% endif %}
-<h2>{{ car.model }}</h2>
-<div class="muted">{{ car.type }} · {{ car.seats }} seats · {{ car.transmission }} · {{ car.fuel }}</div>
+<h2>{{ car.name }}</h2>
+<div class="muted">{{ car.year }} · {{ car.type }} · {{ car.seats }} seats · {{ car.transmission }} · {{ car.fuel }}</div>
 
 {% if damage %}
 <details class="alert">

@@ -142,3 +142,11 @@ tr.retired td { color: #9ca3af; }
 .damage-item select { width: 130px; margin: 0; padding: 5px 6px; font-size: 12px; }
 .log-form { background: var(--panel); border-radius: 8px; padding: 12px; margin-top: 10px; }
 .log-form label.field { margin-bottom: 8px; }
+.toolbar form { margin: 0; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.bar { display: inline-block; width: 90px; height: 8px; margin-right: 8px; background: var(--line); border-radius: 4px; overflow: hidden; vertical-align: middle; }
+.bar span { display: block; height: 100%; background: var(--blue); }
+.b-active { background: #eaf1ff; color: #1d4ed8; }
+.b-retired, .b-cancelled { background: #eef0f2; color: #6b7280; }
+.history td { padding: 8px 4px; font-size: 12px; }
+.history th { padding: 8px 4px; }

@@ -45,10 +45,10 @@
 
 {% for car in cars %}
 <div class="car">
-  {% if car.image %}<img class="thumb" src="{{ url_for('static', filename='cars/' ~ car.image) }}" alt="{{ car.model }}">
+  {% if car.image %}<img class="thumb" src="{{ url_for('static', filename='cars/' ~ car.image) }}" alt="{{ car.name }}">
   {% else %}<div class="ph thumb"></div>{% endif %}
   <div class="car-info">
-    <b>{{ car.model }}</b>
+    <b>{{ car.name }}</b>
     <span class="muted small">{{ car.type }} · {{ car.seats }} seats · {{ car.transmission }}</span>
     <div class="between">
       <b>${{ '%.0f' % car.daily_rate }}/day</b>

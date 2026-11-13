@@ -1,0 +1,42 @@
+{% extends "base_staff.html" %}
+{% block title %}Vehicle utilization{% endblock %}
+{% block content %}
+<h1>Vehicle utilization report</h1>
+<p class="muted">How often each car category was rented between two dates. Cancelled bookings are not counted.</p>
+
+<form class="card toolbar" method="get" style="margin:16px 0">
+  <label class="field" style="margin:0">From<input type="date" name="start" value="{{ start }}" required></label>
+  <label class="field" style="margin:0">To<input type="date" name="end" value="{{ end }}" required></label>
+  <button class="btn btn-primary btn-sm" style="align-self:end">Run report</button>
+  <span class="muted small" style="align-self:end">{{ report.range_days }} day{{ 's' if report.range_days != 1 }}</span>
+</form>
+
+<div class="stats">
+  <div class="stat">Rentals in range<b>{{ report.totals.rentals }}</b></div>
+  <div class="stat">Days rented<b>{{ report.totals.rental_days }}</b></div>
+  <div class="stat">Cars in fleet<b>{{ report.totals.fleet }}</b></div>
+  <div class="stat">Overall utilization<b>{{ report.totals.utilization }}%</b></div>
+</div>
+
+<div class="card">
+  <table>
+    <thead><tr><th>CATEGORY</th><th>CARS</th><th>RENTALS</th><th>RENTALS PER CAR</th><th>DAYS RENTED</th>
+      <th>AVG. LENGTH</th><th>UTILIZATION</th></tr></thead>
+    <tbody>
+    {% for r in report.rows %}
+      <tr>
+        <td><b>{{ r.type }}</b></td>
+        <td>{{ r.fleet }}</td>
+        <td>{{ r.rentals }}</td>
+        <td>{{ r.rentals_per_car }}</td>
+        <td>{{ r.rental_days }}</td>
+        <td>{{ r.avg_length }} day{{ 's' if r.avg_length != 1 }}</td>
+        <td><div class="bar"><span style="width:{{ [r.utilization, 100]|min }}%"></span></div>{{ r.utilization }}%</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="small muted">Utilization = days rented within the range ÷ (cars in category × days in range).
+    Cars counts every vehicle in service plus any retired car that was rented during the range.</p>
+</div>
+{% endblock %}

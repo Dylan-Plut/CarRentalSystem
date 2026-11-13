@@ -13,11 +13,14 @@ CREATE TABLE users (
 
 CREATE TABLE vehicles (
     id           INTEGER PRIMARY KEY,
+    make         TEXT NOT NULL,
     model        TEXT NOT NULL,
+    name         TEXT GENERATED ALWAYS AS (make || ' ' || model) VIRTUAL,  -- display name, e.g. "Toyota Corolla"
+    year         INTEGER NOT NULL,
     plate        TEXT NOT NULL UNIQUE,
     type         TEXT NOT NULL CHECK (type IN ('Compact', 'Sedan', 'SUV', 'Van')),
-    seats        INTEGER NOT NULL,
-    daily_rate   REAL NOT NULL,
+    seats        INTEGER NOT NULL CHECK (seats > 0),
+    daily_rate   REAL NOT NULL CHECK (daily_rate > 0),
     transmission TEXT NOT NULL,
     fuel         TEXT NOT NULL,
     image        TEXT,  -- file name under static/cars/
@@ -52,3 +55,7 @@ CREATE TABLE damage_reports (
 );
 
 CREATE INDEX idx_reservations_vehicle ON reservations(vehicle_id, pickup_date, return_date);
+CREATE INDEX idx_reservations_user ON reservations(user_id, pickup_date);
+
+-- Bumped whenever the tables change, so db.py knows to rebuild an older rental.db.
+PRAGMA user_version = 2;

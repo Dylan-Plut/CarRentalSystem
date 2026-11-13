@@ -1,7 +1,7 @@
 {% extends "base_staff.html" %}
 {% block title %}Fleet{% endblock %}
 {% block content %}
-<h1>Fleet</h1>
+<div class="between"><h1>Fleet</h1><a class="btn btn-primary btn-sm" href="{{ url_for('add_vehicle') }}">+ Add vehicle</a></div>
 <div class="split" style="margin-top:16px">
   <div class="card">
     <form class="toolbar" method="get">
@@ -16,7 +16,7 @@
       <tbody>
       {% for v in vehicles %}
         <tr class="{{ 'selected' if selected and v.id == selected.id }} {{ 'retired' if v.status == 'retired' }}">
-          <td><a href="{{ url_for('fleet', vehicle=v.id, show=f.show, q=f.q) }}">{{ v.model }}</a></td>
+          <td><a href="{{ url_for('fleet', vehicle=v.id, show=f.show, q=f.q) }}">{{ v.name }}</a></td>
           <td>{{ v.plate }}</td>
           <td>{{ v.type }}</td>
           <td>{% if v.open_damage %}<span class="warn-text">{{ v.open_damage }} open</span>{% else %}None{% endif %}</td>
@@ -31,23 +31,57 @@
 
   {% if selected %}
   <div class="card record">
-    <div class="between"><b style="font-size:16px">{{ selected.model }} · {{ selected.plate }}</b>
-      <span class="badge b-{{ selected.status }}">{{ selected.status|capitalize }}</span></div>
-    {% if selected.image %}<img class="record-photo" src="{{ url_for('static', filename='cars/' ~ selected.image) }}" alt="{{ selected.model }}">{% endif %}
+    <div class="between"><b style="font-size:16px">{{ selected.year }} {{ selected.name }} · {{ selected.plate }}</b>
+      <span class="badge b-{{ selected.status }}">{{ vehicle_statuses[selected.status] }}</span></div>
+    {% if selected.image %}<img class="record-photo" src="{{ url_for('static', filename='cars/' ~ selected.image) }}" alt="{{ selected.name }}">{% endif %}
+
+    {% if editing and selected.status != 'retired' %}
+    <form class="log-form" method="post" action="{{ url_for('edit_vehicle', vehicle_id=selected.id) }}">
+      <b>Edit vehicle</b>
+      {% set v = selected %}
+      {% include "_vehicle_fields.html" %}
+      <div class="toolbar">
+        <button class="btn btn-primary btn-sm">Save changes</button>
+        <a class="btn btn-outline btn-sm" href="{{ url_for('fleet', vehicle=selected.id, show=f.show, q=f.q) }}">Cancel</a>
+      </div>
+    </form>
+    {% else %}
     <div class="row2" style="margin-top:10px">
+      <label class="field">Vehicle ID<input value="#{{ selected.id }}" disabled></label>
+      <label class="field">Year<input value="{{ selected.year }}" disabled></label>
+      <label class="field">Make<input value="{{ selected.make }}" disabled></label>
+      <label class="field">Model<input value="{{ selected.model }}" disabled></label>
       <label class="field">Type<input value="{{ selected.type }}" disabled></label>
       <label class="field">Seats<input value="{{ selected.seats }}" disabled></label>
-      <label class="field">Daily rate<input value="${{ '%.0f' % selected.daily_rate }}/day" disabled></label>
-      <label class="field">Fuel<input value="{{ selected.fuel }}" disabled></label>
+      <label class="field">Daily rate<input value="${{ '%.2f' % selected.daily_rate }}/day" disabled></label>
+      <label class="field">Fuel · transmission<input value="{{ selected.fuel }} · {{ selected.transmission }}" disabled></label>
     </div>
-    {% if selected.status != 'retired' %}
-    <form method="post" action="{{ url_for('set_service', vehicle_id=selected.id) }}">
-      {% if selected.status == 'maintenance' %}
-      <button class="btn btn-outline btn-sm" name="action" value="in">Return to service</button>
+    <div class="toolbar">
+      {% if selected.status != 'retired' %}
+      <a class="btn btn-outline btn-sm" href="{{ url_for('fleet', vehicle=selected.id, show=f.show, q=f.q, edit=1) }}">Edit details</a>
+      <form method="post" action="{{ url_for('set_service', vehicle_id=selected.id) }}">
+        {% if selected.status == 'maintenance' %}
+        <button class="btn btn-outline btn-sm" name="action" value="in">Return to service</button>
+        {% else %}
+        <button class="btn btn-warn btn-sm" name="action" value="out">Take out of service</button>
+        {% endif %}
+      </form>
+      <form method="post" action="{{ url_for('retire_vehicle', vehicle_id=selected.id) }}"
+            data-confirm="Retire {{ selected.name }} ({{ selected.plate }})? It will no longer be shown to customers."
+            onsubmit="return confirm(this.dataset.confirm)">
+        <button class="btn btn-warn btn-sm" name="action" value="retire" {{ 'disabled' if upcoming }}
+                title="{{ 'Has upcoming bookings' if upcoming else 'Permanently remove from the rentable fleet' }}">Retire</button>
+      </form>
       {% else %}
-      <button class="btn btn-warn btn-sm" name="action" value="out">Take out of service</button>
+      <form method="post" action="{{ url_for('retire_vehicle', vehicle_id=selected.id) }}">
+        <button class="btn btn-outline btn-sm" name="action" value="reinstate">Reinstate vehicle</button>
+      </form>
       {% endif %}
-    </form>
+    </div>
+    {% if upcoming and selected.status != 'retired' %}
+    <p class="small muted">{{ upcoming|length }} upcoming booking{{ 's' if upcoming|length > 1 }}
+      (next {{ upcoming[0].pickup_date }} → {{ upcoming[0].return_date }}); it can be retired once these are finished.</p>
+    {% endif %}
     {% endif %}
 
     <div class="between" style="margin-top:18px">
