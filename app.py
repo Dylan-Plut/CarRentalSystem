@@ -230,7 +230,7 @@ def fleet():
             [selected["id"]]).fetchall()
         upcoming = rentals.upcoming_bookings(db, selected["id"], date.today())
     return render_template("fleet.html", vehicles=vehicles, selected=selected, damage=damage,
-                           upcoming=upcoming, editing=request.args.get("edit") == "1",
+                           upcoming=upcoming,
                            f={"show": show, "q": q}, areas=rentals.DAMAGE_AREAS,
                            kinds=rentals.DAMAGE_KINDS, statuses=rentals.DAMAGE_STATUSES,
                            **vehicle_form_options())
@@ -288,7 +288,7 @@ def edit_vehicle(vehicle_id):
         v = rentals.parse_vehicle(request.form, date.today().year)
     except ValueError as e:
         flash(str(e))
-        return redirect(url_for("fleet", vehicle=vehicle_id, edit=1))
+        return redirect(url_for("fleet", vehicle=vehicle_id))
     try:
         db.execute(
             "UPDATE vehicles SET make = :make, model = :model, year = :year, plate = :plate, type = :type,"
@@ -298,7 +298,7 @@ def edit_vehicle(vehicle_id):
         db.commit()
     except sqlite3.IntegrityError:
         flash(f"A vehicle with plate {v['plate']} already exists.")
-        return redirect(url_for("fleet", vehicle=vehicle_id, edit=1))
+        return redirect(url_for("fleet", vehicle=vehicle_id))
     flash("Vehicle details saved.", "ok")
     return redirect(url_for("fleet", vehicle=vehicle_id))
 

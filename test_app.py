@@ -89,6 +89,7 @@ class FleetManagementTests(BaseCase):
 
     def test_add_vehicle_rejects_bad_input_and_duplicate_plate(self):
         self.client.post("/staff/vehicles/new", data={**self.NEW_CAR, "seats": "0"})
+        self.client.post("/staff/vehicles/new", data={**self.NEW_CAR, "daily_rate": "52.555"})
         self.client.post("/staff/vehicles/new", data={**self.NEW_CAR, "plate": "CPDX 318"})  # Corolla's plate
         self.assertEqual(self.query("SELECT COUNT(*) FROM vehicles WHERE make = 'Hyundai'")[0][0], 0)
 

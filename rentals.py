@@ -172,12 +172,14 @@ def parse_vehicle(form, this_year):
         "plate": text("plate", "Plate", 10).upper(),
         "year": number("year", "Year", int, MIN_YEAR, this_year + 1),
         "seats": number("seats", "Seating capacity", int, 1, 15),
-        "daily_rate": round(number("daily_rate", "Daily rate", float, 1, 1000), 2),
+        "daily_rate": number("daily_rate", "Daily rate", float, 1, 1000),
         "type": form.get("type"),
         "transmission": form.get("transmission"),
         "fuel": form.get("fuel"),
         "status": form.get("status", "active"),
     }
+    if vehicle["daily_rate"] != round(vehicle["daily_rate"], 2):
+        raise ValueError("Daily rate can have at most two decimal places.")
     if vehicle["type"] not in VEHICLE_TYPES:
         raise ValueError("Choose a vehicle type.")
     if vehicle["transmission"] not in TRANSMISSIONS:

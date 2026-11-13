@@ -35,15 +35,12 @@
       <span class="badge b-{{ selected.status }}">{{ vehicle_statuses[selected.status] }}</span></div>
     {% if selected.image %}<img class="record-photo" src="{{ url_for('static', filename='cars/' ~ selected.image) }}" alt="{{ selected.name }}">{% endif %}
 
-    {% if editing and selected.status != 'retired' %}
-    <form class="log-form" method="post" action="{{ url_for('edit_vehicle', vehicle_id=selected.id) }}">
-      <b>Edit vehicle</b>
+    {% if selected.status != 'retired' %}
+    <form method="post" action="{{ url_for('edit_vehicle', vehicle_id=selected.id) }}" style="margin-top:10px">
+      <div class="small muted">Vehicle ID #{{ selected.id }}</div>
       {% set v = selected %}
       {% include "_vehicle_fields.html" %}
-      <div class="toolbar">
-        <button class="btn btn-primary btn-sm">Save changes</button>
-        <a class="btn btn-outline btn-sm" href="{{ url_for('fleet', vehicle=selected.id, show=f.show, q=f.q) }}">Cancel</a>
-      </div>
+      <button class="btn btn-outline btn-sm">Save vehicle details</button>
     </form>
     {% else %}
     <div class="row2" style="margin-top:10px">
@@ -56,9 +53,9 @@
       <label class="field">Daily rate<input value="${{ '%.2f' % selected.daily_rate }}/day" disabled></label>
       <label class="field">Fuel · transmission<input value="{{ selected.fuel }} · {{ selected.transmission }}" disabled></label>
     </div>
-    <div class="toolbar">
+    {% endif %}
+    <div class="toolbar" style="margin-top:10px">
       {% if selected.status != 'retired' %}
-      <a class="btn btn-outline btn-sm" href="{{ url_for('fleet', vehicle=selected.id, show=f.show, q=f.q, edit=1) }}">Edit details</a>
       <form method="post" action="{{ url_for('set_service', vehicle_id=selected.id) }}">
         {% if selected.status == 'maintenance' %}
         <button class="btn btn-outline btn-sm" name="action" value="in">Return to service</button>
@@ -81,7 +78,6 @@
     {% if upcoming and selected.status != 'retired' %}
     <p class="small muted">{{ upcoming|length }} upcoming booking{{ 's' if upcoming|length > 1 }}
       (next {{ upcoming[0].pickup_date }} → {{ upcoming[0].return_date }}); it can be retired once these are finished.</p>
-    {% endif %}
     {% endif %}
 
     <div class="between" style="margin-top:18px">
