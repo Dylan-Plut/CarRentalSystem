@@ -1,7 +1,7 @@
 """Booking, search and inventory rules, kept apart from the Flask routes so they can be tested directly."""
 from datetime import date, timedelta
 
-VEHICLE_TYPES = ["Compact", "Sedan", "SUV", "Van"]
+VEHICLE_TYPES = ["Compact", "Sedan", "SUV", "Van","Sports Car"]
 BRANCH = "Waterloo – King St N"
 TAX_RATE = 0.13
 MAX_RENTAL_DAYS = 30
